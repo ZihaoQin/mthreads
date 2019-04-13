@@ -1,0 +1,58 @@
+服务端并发处理能力：
+
+
+1、采用循环接收请求     while(true)
+2、采用线程池：
+            ①线程服用，创建线程耗时，回收线程慢
+            ②放置短时间内高并发，指定线程池大小，超过数量将等待，防止短时间创建大量线程导致资源耗尽，服务挂掉
+
+
+绑定端口：
+        // 要连接的服务端IP地址和端口
+        String host = "localhost";
+        int port = 55533;
+        // 与服务端建立连接
+        Socket socket = new Socket();
+        socket.bind(new InetSocketAddress(55534));
+        socket.connect(new InetSocketAddress(host, port));
+
+真实的检测连接状态还是得通过额外的手段，有两种方式。
+        1. 自定义心跳包
+            双方需要约定，什么样的消息属于心跳包，什么样的消息属于正常消息，假设你看了上面的章节现在说就容易理解了，我们定义前两个字节为消息的长度，那么我们就可以定义第3个字节为消息的属性，可以指定一位为消息的类型，1为心跳，0为正常消息。那么要做的有如下：
+
+            ①客户端发送心跳包
+            ②服务端获取消息判断是否是心跳包，若是丢弃
+            ③当客户端发送心跳包失败时，就可以断定连接不可用
+
+                    //有一个连接中的socket
+                    Socket socket=...
+                    //要发送的数据
+                    String data="";
+                    try{
+                        //发送心跳包或者紧急数据，来检测连接的可用性
+                    }catch (Excetption e){
+                        //打印日志，并重连Socket
+                        socket=new Socket(host,port);
+                    }
+                    socket.write(data);
+
+         2. 通过发送紧急数据
+         　　Socket自带一种模式，那就是发送紧急数据，这有一个前提，那就是服务端的OOBINLINE不能设置为true，它的默认值是false。
+         　　OOBINLINE的true和false影响了什么：
+                对客户端没有影响
+                对服务端，如果设置为true，那么服务端将会捕获紧急数据，这会对接收数据造成混淆，需要额外判断
+            发送紧急数据通过调用Socket的方法：socket.sendUrgentData(0);
+
+
+不用判断连接的情况：直接发送数据，出异常后重新连接再次发送
+            //有一个连接中的socket
+            Socket socket=...
+            //要发送的数据
+            String data="";
+            try{
+                socket.write(data);
+            }catch (Excetption e){
+                //打印日志，并重连Socket
+                socket=new Socket(host,port);
+                socket.write(data);
+            }
