@@ -1,0 +1,5 @@
+线程池：
+    线程池中submit()与execute()的区别
+    1、接收参数不一样（前者task，后缀Runable）；
+    2、submit有返回值，execute无返回值
+    3、submit方便处理异常
